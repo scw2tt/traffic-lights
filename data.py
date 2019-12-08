@@ -17,11 +17,10 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from src.utils import dboxes300_coco, COCODetection
-from src.utils import SSDTransformer
-from src.coco import COCO
+from utils import dboxes300_coco, COCODetection
+from utils import SSDTransformer
 #DALI import
-from src.coco_pipeline import COCOPipeline, DALICOCOIterator
+#from src.coco_pipeline import COCOPipeline, DALICOCOIterator
 
 def get_train_loader(args, local_seed):
     train_annotate = os.path.join(args.data, "annotations/instances_train2017.json")

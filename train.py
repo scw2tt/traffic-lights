@@ -17,7 +17,6 @@ import torch
 import time
 from SSD import _C as C
 
-from apex import amp
 
 def train_loop(model, loss_func, epoch, optim, train_dataloader, val_dataloader, encoder, iteration, logger, args, mean, std):
 #     for nbatch, (img, _, img_size, bbox, label) in enumerate(train_dataloader):
