@@ -15,7 +15,7 @@
 import torch
 import torch.nn as nn
 from torchvision.models.resnet import resnet18, resnet34, resnet50, resnet101, resnet152
-
+from torchvision import models
 
 class ResNet(nn.Module):
     def __init__(self, backbone='resnet50', backbone_path=None):
@@ -32,9 +32,12 @@ class ResNet(nn.Module):
         elif backbone == 'resnet101':
             backbone = resnet101(pretrained=not backbone_path)
             self.out_channels = [1024, 512, 512, 256, 256, 256]
-        else:  # backbone == 'resnet152':
+        elif  backbone == 'resnet152':
             backbone = resnet152(pretrained=not backbone_path)
             self.out_channels = [1024, 512, 512, 256, 256, 256]
+        elif backbone = 'inceptionv3'
+            backbone = inceptionv3(pretrained = True)
+            self.out_channels = []
         if backbone_path:
             backbone.load_state_dict(torch.load(backbone_path))
 
