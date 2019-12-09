@@ -15,6 +15,8 @@
 import os
 
 import torch
+import torchvision
+import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
 from utils import dboxes300_coco, COCODetection
@@ -22,18 +24,15 @@ from utils import SSDTransformer
 #DALI import
 #from src.coco_pipeline import COCOPipeline, DALICOCOIterator
 
-def get_train_loader(args, local_seed):
-    train_annotate = os.path.join(args.data, "annotations/instances_train2017.json")
-    train_coco_root = os.path.join(args.data, "train2017")
-
-    train_pipe = COCOPipeline(args.batch_size, args.local_rank, train_coco_root,
-                    train_annotate, args.N_gpu, num_threads=args.num_workers,
-                    output_fp16=args.amp, output_nhwc=False,
-                    pad_output=False, seed=local_seed)
-    train_pipe.build()
-    test_run = train_pipe.schedule_run(), train_pipe.share_outputs(), train_pipe.release_outputs()
-    train_loader = DALICOCOIterator(train_pipe, 118287 / args.N_gpu)
-    return train_loader
+def get_train_loader():
+    transform = transforms.Compose(
+    [transforms.ToTensor(),
+     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                        download=True, transform=None)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
+                                          shuffle=True, num_workers=2)
+    return trainloader
 
 
 def get_val_dataset(args):
