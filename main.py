@@ -1,9 +1,16 @@
 import torch
 from PIL import Image
+import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 import torchvision.transforms as transforms
 from model import SSD300, ResNet, Loss
+from train import train_loop, tencent_trick
+from PIL import ImageMath
+import cv2
+
+#Sources : https://github.com/julimueller/dtld_parsing
+# https://github.com/NVIDIA/DeepLearningExamples/tree/master/PyTorch/Detection/SSD
 
 preprocessFn = transforms.Compose(
     [transforms.Resize((300,300)),  
@@ -30,23 +37,64 @@ uris = [
 inputs = [utils.prepare_input(uri) for uri in uris]
 """
 utils = torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_ssd_processing_utils')
-img = Image.open("traffic_test.jpg")
-img = img.resize((300,300)) 
+img = cv2.imread("data_test.tiff", cv2.IMREAD_UNCHANGED)
+img = cv2.cvtColor(img, cv2.COLOR_BAYER_GB2RGB)
+# Images are saved in 12 bit raw -> shift 4 bits
+img = np.right_shift(img, 4)
+img = img.astype(np.uint8)
+img_pil = Image.fromarray(img)
+#cv2.imshow("a",img)
+#cv2.waitKey(1)
+#plt.imshow(img_pil)
+#plt.show()
+
+#img = Image.open("data_test.tiff")
+input_size = 300
+img_pil = img_pil.resize((input_size,input_size)) 
 #print(len(inputs[0][0]))
 #print(len(img))
 #inputs = 
 #tensor = utils.prepare_tensor(inputs, precision == 'fp16')
 #print(uris[0])
 #print(utils.prepare_input(uris[0]))
-a = preprocessFn(img).unsqueeze(0)
+a = preprocessFn(img_pil).unsqueeze(0)
 print(a.shape)
 #print(tensor.shape)
-#imgplot = plt.imshow(img)
-#plt.show()
+#print(img.mode)
+
 a = a.to(device)
 ssd300 = SSD300(backbone=ResNet('resnet18', None))
 
 ssd300.to(device)
+
+#Training
+
+ssd300.train()
+dboxes = dboxes300_coco()
+
+#trainLoader
+#valLoader
+criterion = Loss(dboxes)
+criterion.to(device)
+
+learningRate = 0.05
+optimizer = optim.SGD(tencent_trick(ssd300) lr = learningRate) #Tencent_trick is to disable weight decay for some parameters
+epoch_size = 10
+for epoch in range(0,epoch_size):
+	#train_loop() #Put all paramters in here
+
+	#Validation step
+
+	#print out Accuracies and Losses
+
+
+
+
+
+
+
+##Testing an image
+
 ssd300.eval()
 with torch.no_grad():
 	yhat = ssd300(a)
@@ -54,7 +102,7 @@ print(len(yhat))
 print(yhat[0].shape)
 print(yhat[1].shape)
 results_per_input = utils.decode_results(yhat)
-best_results_per_input = [utils.pick_best(results, 0.550) for results in results_per_input]
+best_results_per_input = [utils.pick_best(results, 0.50) for results in results_per_input]
 classes_to_labels = {
   0: "red",
   1: "yellow",
@@ -63,13 +111,13 @@ classes_to_labels = {
 for image_idx in range(len(best_results_per_input)):
     fig, ax = plt.subplots(1)
     # Show original, denormalized image...
-    image = img#inputs[image_idx] / 2 + 0.5
+    image = img_pil#inputs[image_idx] / 2 + 0.5
     ax.imshow(image)
     # ...with detections
     bboxes, classes, confidences = best_results_per_input[image_idx]
     for idx in range(len(bboxes)):
         left, bot, right, top = bboxes[idx]
-        x, y, w, h = [val * 300 for val in [left, bot, right - left, top - bot]]
+        x, y, w, h = [val * input_size for val in [left, bot, right - left, top - bot]]
         if(h>w):
 	        rect = patches.Rectangle((x, y), w, h, linewidth=1, edgecolor='r', facecolor='none')
 	        ax.add_patch(rect)
